@@ -17,14 +17,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool value = false;
   bool isListVisible = false;
   bool matcher = false;
+  bool selectAll = false;
+
   List<String> textFieldValues = [];
   List<String> productFieldValues = [];
   var displayedVariants;
   var displayedProds;
   List<String> combinations = [];
+  List<bool> checkBoxValues = [];
 
   var dropDownItems = ['Size', 'Color', 'Material', 'Style'];
   String selectedItem = 'Color';
+  String selectedItem2 = 'Size';
 
   void submitData() {
     Map<String, dynamic> productVariant = {
@@ -54,8 +58,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     for (String item1 in innerList1) {
       for (String item2 in innerList2) {
         String combination = '$item1 $item2';
-        combinations.add(combination);
+        setState(() {
+          combinations.add(combination);
+        });
+
         print(combination);
+        setState(() {
+          checkBoxValues = List.generate(combinations.length, (index) => false);
+        });
+        print(checkBoxValues);
       }
     }
   }
@@ -66,6 +77,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Provider.of<ProductProvider>(context, listen: false).product;
     final selectedProduct =
         productProvider.firstWhere((product) => product.id == widget.id);
+    List<bool> checkBoxValues =
+        List.generate(combinations.length, (index) => false);
 
     return Scaffold(
       appBar: AppBar(
@@ -140,14 +153,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                           Row(
                             children: [
-                              Container(
-                                  width: 320,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey, width: 1.0),
-                                      borderRadius: BorderRadius.circular(5)),
-                                  child: const Text('Size')),
+                              SizedBox(
+                                width: 315,
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.all(5)),
+                                  value: selectedItem,
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      selectedItem = newValue;
+                                    }
+                                  },
+                                  items: dropDownItems.map((String item) {
+                                    return DropdownMenuItem<String>(
+                                      value: item,
+                                      child: Text(item),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
                               IconButton(
                                   onPressed: () {},
                                   icon: const Icon(Icons.delete))
@@ -412,24 +437,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 const Text('Variants...'),
                                 ElevatedButton(
                                     onPressed: () {
-                                      entireCombinations();
+                                      if (combinations.isEmpty) {
+                                        entireCombinations();
+                                      } else {
+                                        showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title: const Text(
+                                                    'Empty Data Set..'),
+                                                content: const Text(
+                                                    'No items selected to generate product variants'),
+                                                actions: [
+                                                  TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child: const Text('Ok'))
+                                                ],
+                                              );
+                                            });
+                                      }
                                     },
-                                    child: const Text('Click me')),
+                                    child: const Text(
+                                        'Click To see Product variants')),
                                 Wrap(
                                   children: List.generate(combinations.length,
                                       (index) {
                                     return Row(
                                       children: [
                                         Checkbox(
-                                            value: matcher,
-                                            onChanged: (value) {
-                                              this.value = matcher;
+                                            key: Key(combinations[index]),
+                                            value: checkBoxValues[index],
+                                            onChanged: (bool? value) {
+                                              setState(() {
+                                                checkBoxValues[index] = value!;
+                                              });
                                             }),
                                         Text(combinations[index])
                                       ],
                                     );
                                   }),
-                                )
+                                ),
                               ],
                             ),
                           )
